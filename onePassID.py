@@ -57,17 +57,15 @@ def markUnmarkedPositive(groupToTest):
         return 0
 
 
-n = 24
-k = 1
-s = 3
+n = 720
+k = 13
+s = 36
 
 S = [TestSubject(True) if x < k else TestSubject(False) for x in range(n)]
 
 r = 0
 partitions = list()
 # if desired, set r > 0 to generate initial partitions before loop starts.
-# in other words, first partition made in the loop will be r+1...
-# and r+1 partitions will be used to make the first batch of groups
 # regardless of the initial choice, ALL PARTITIONS WILL BE SAVED ACROSS LOOPS.
 for p in range(r):
     random.shuffle(S)
@@ -104,7 +102,7 @@ while idPositive + idNegative < n:
 
     for group in groups:
         # if x is the only person left in a group that tested positive
-        # report that k is positive
+        # report that x is positive
         idPositive += markUnmarkedPositive(group)
 
     remaining = n - (idPositive + idNegative)
@@ -114,4 +112,4 @@ while idPositive + idNegative < n:
     for subject in S:
         subject.confirmedStatus = None
 
-    print('For', r, 'partition(s) I found', idPositive, 'positives and', idNegative, 'negatives.', remaining, 'remain unconfirmed.')
+    print('For', r, 'partition(s) I found', idPositive, 'positives and', idNegative, 'negatives.', remaining, 'remain(s) unconfirmed.')
