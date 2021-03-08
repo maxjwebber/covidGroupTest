@@ -19,8 +19,9 @@ for each person x
            report that x is positive
 '''
 import random
+from scipy.stats.stats import pearsonr
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font
 wb = Workbook()
 
 
@@ -28,7 +29,6 @@ class TestSubject:
     def __init__(self, id, hasCOVID19):
         self.id = id
         self.hasCOVID19 = hasCOVID19
-        self.confirmedStatus = None
 
 
 class TestGroup:
@@ -37,47 +37,54 @@ class TestGroup:
         self.set = set
         self.testsPositive = None
 
+def purge(purgeMember, allGroups):
+        #purges groups containing a certain member
+        range = len(allGroups)
+        i=range - 1
+        while i >=0 :
+            if purgeMember in allGroups[i].set:
+                allGroups.remove(i)
+                i-=1
 
-def markAndPurgeNegatives(groupToCheck, allGroups):
-    if groupToCheck.testsPositive:
-        return 0
+def corellateMembershipWithInfectionStatus(allGroups):
+    #returns corellation value for infection status versus how many groups each person is in, post-elimination
+    members = dict()
+    for group in allGroups:
+        for person in group.set:
+            members[person] = members.get(person,0) + 1
+    infectionStatuses = [1 if member.hasCOVID19 else 0 for member in members.keys()]
+    membership = list(members.values())
+    if len(members) > 1:
+        corr = pearsonr(infectionStatuses, membership)[0]
+        return corr
     else:
-        newNegatives = 0
-        negatives = groupToCheck.set.copy()
-        for x in negatives:
-            if x.confirmedStatus is None:
-                newNegatives += 1
-                x.confirmedStatus = False
-        for thisG in allGroups:
-            thisG.set = thisG.set.difference(negatives)
-        return newNegatives
+        return None
 
 
-def markUnmarkedPositive(groupToTest):
-    if groupToTest.testsPositive and len(groupToTest.set) == 1:
-        for x in groupToTest.set:
-            if x.confirmedStatus:
-                return 0
-            else:
-                x.confirmedStatus = True
-                return 1
-    else:
-        return 0
-
-
-n = 42
-k = 4
-s = 6
+n = 720
+k = 8
+s = 90
 
 S = [TestSubject(x, True) if x < k else TestSubject(x, False) for x in range(n)]
 
 r = 0
-partitions = list()
-idPositive = 0
-idNegative = 0
+nextPartition = list()
+idPositive = set()
+idNegative = set()
 groups = list()
+valuessheet = wb['Sheet']
+valuessheet.title = 'Values'
+valuessheet.cell(row=1, column=1, value="Partitions")
+valuessheet.cell(row=1, column=2, value="ID Positives")
+valuessheet.cell(row=1, column=3, value="ID Negatives")
+valuessheet.cell(row=1, column=4, value="Negative Inconclusives")
+valuessheet.cell(row=1, column=5, value="Positive Inconclusives")
+valuessheet.cell(row=1, column=6, value="Correlation(Infection Rate/Membership in Unconfirmed Groups)")
 
-while idPositive + idNegative < n:
+newPositives = set()
+newPositives.clear()
+
+while len(idPositive) + len(idNegative) < n:
     # Form r partitions of S into n//s groups of s people (all together there are rn//s groups)
 
     r += 1
@@ -85,77 +92,93 @@ while idPositive + idNegative < n:
     ws = wb.create_sheet(sheetName)
 
     random.shuffle(S)
-    partitions.append(S.copy())
-    for p in range(len(partitions)):
-        cell = ws.cell(row=(p * (n // s+1)) + 1, column=1, value="PARTITION " + str(p + 1) + " STARTS HERE")
-        for g in range(n//s):
-            groups.append(TestGroup(str(p)+"-"+str(g), set(partitions[p][(g*s): ((g+1)*s)])))
-            i=0
-            for person in groups[(p*(n//s))+g].set:
-                i+=1
-                cell = ws.cell(row=(p*(n//s+1))+g+2, column=i, value=person.id)
-                if person.hasCOVID19:
-                    cell.font = Font(bold=True)
-                if person.confirmedStatus:
-                    cell.fill = PatternFill("solid", fgColor="00FF0000")
-                elif person.confirmedStatus==False:
-                    cell.fill = PatternFill("solid", fgColor="0099CC00")
+    nextPartition = S.copy()
+    #add groups from new partition, cull those confirmed
+    for g in range(n//s):
+        nextSet = set(
+            nextPartition[(g*s): ((g+1)*s)]).difference(idNegative.union(idPositive))
+        if len(nextSet)>0:
+            groups.append(TestGroup(str(r)+"-"+str(g), nextSet))
+
+
+    for g in range(len(groups)):
+        i=0
+        for person in groups[g].set:
+            i+=1
+            cell = ws.cell(row=g+2, column=i, value=person.id)
+            if person.hasCOVID19:
+                cell.font = Font(bold=True)
 
     # Test every group
     for g in range(len(groups)):
-        offset = g//(n//s) + 2
         if any(person.hasCOVID19 for person in groups[g].set):
             groups[g].testsPositive = True
-            cell = ws.cell(row=g+offset, column=s + 1, value="(+) Positive")
+            cell = ws.cell(row=g+2, column=s + 1, value="(+) Positive")
         else:
             groups[g].testsPositive = False
-            cell = ws.cell(row=g+offset, column=s + 1, value="(-) Negative")
-
+            cell = ws.cell(row=g+2, column=s + 1, value="(-) Negative")
 
     cell = ws.cell(row=1, column=s+3, value="ID/PURGE NEGATIVES")
-    for group in groups:
+    for g in range(len(groups)):
         # if x is in a group that tested negative then
         # report that x is negative
         # remove x from all groups
-        idNegative += markAndPurgeNegatives(group, groups)
+        if groups[g].testsPositive==False:
+            idNegative = idNegative.union(groups[g].set)
+            purgeSet = groups[g].set.copy()
+            for group in groups:
+                group.set = group.set.difference(purgeSet)
 
     for g in range(len(groups)):
         col = s+2
-        offset = g // (n // s) + 2
         for person in groups[g].set:
             col+=1
-            cell = ws.cell(row=g + offset, column=col, value=person.id)
+            cell = ws.cell(row=g + 2, column=col, value=person.id)
             if person.hasCOVID19:
                 cell.font = Font(bold=True)
-            if person.confirmedStatus:
-                cell.fill = PatternFill("solid", fgColor="00FF0000")
-            elif person.confirmedStatus == False:
-                cell.fill = PatternFill("solid", fgColor="00C0C0C0")
 
-    for group in groups:
+    numGroups = len(groups)
+    g=0
+
+    while g<numGroups:
         # if x is the only person left in a group that tested positive
         # report that x is positive
-        idPositive += markUnmarkedPositive(group)
+        # remove groups containing the positive (we're done with them)
+        if groups[g].testsPositive and len(groups[g].set) == 1:
 
-    cell = ws.cell(row=1, column=2*s+4, value="ID SINGLETON POSITIVES")
+            for x in groups[g].set:
+                myPos = x
+            #myPos is the unique element of groups[g].set
+            newPositives.add(myPos)
+        g+=1
+
+    for pos in newPositives:
+        i = len(groups)
+        while i > 0:
+            i-=1
+            if pos in groups[i].set:
+                groups.pop(i)
+
+    idPositive=idPositive.union(newPositives)
+    newPositives.clear()
+
+    cell = ws.cell(row=1, column=2*s+4, value="ID SINGLETON POSITIVES\PURGE GROUPS CONTAINING THEM")
     for g in range(len(groups)):
         col = 2*s+3
-        offset = g // (n // s) + 2
         for person in groups[g].set:
             col += 1
-            cell = ws.cell(row=g + offset, column=col, value=person.id)
+            cell = ws.cell(row=g + 2, column=col, value=person.id)
             if person.hasCOVID19:
                 cell.font = Font(bold=True)
-            if person.confirmedStatus:
-                cell.fill = PatternFill("solid", fgColor="00FF0000")
-            elif person.confirmedStatus == False:
-                cell.fill = PatternFill("solid", fgColor="0099CC00")
 
-    remaining = n - (idPositive + idNegative)
-    # before wiping, write subject status/group affiliation to file if desired
-    # wipe test groups and unmark subjects for next repetition
-    groups.clear()
+    groups = [group for group in groups if len(group.set) > 0]
 
-    print('For', r, 'partition(s) I found', idPositive, 'positives and', idNegative, 'negatives.', remaining, 'remain(s) unconfirmed.')
-del wb['Sheet']
+    remaining = n - (len(idPositive) + len(idNegative))
+    print('For', r, 'partition(s) I found', len(idPositive), 'positives and', len(idNegative), 'negatives.', remaining, 'remain(s) unconfirmed.')
+    valuessheet.cell(row=r+1, column=1, value=r)
+    valuessheet.cell(row=r+1, column=2, value=len(idPositive))
+    valuessheet.cell(row=r+1, column=3, value=len(idNegative))
+    valuessheet.cell(row=r+1, column=4, value=n-k-len(idNegative))
+    valuessheet.cell(row=r+1, column=5, value=k-len(idPositive))
+    valuessheet.cell(row=r + 1, column=6, value=corellateMembershipWithInfectionStatus(groups))
 wb.save("infographic.xlsx")
