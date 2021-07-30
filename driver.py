@@ -1,13 +1,18 @@
 import csv
 from opEliminate import processTestedGroups
+import sys
+
+if len(sys.argv)<3:
+   print("usage is driver.py [csv of positives] [csv of negatives]")
+   exit(1)
 
 positiveGroups = list()
 negativeGroups = list()
-with open('positives.csv', newline='') as poscsvfile:
+with open(sys.argv[1], newline='') as poscsvfile:
     posreader = csv.reader(poscsvfile, delimiter=' ', quotechar='|')
     for row in posreader:
         positiveGroups.append(row)
-with open('negatives.csv', newline='') as negcsvfile:
+with open(sys.argv[2], newline='') as negcsvfile:
     negreader = csv.reader(negcsvfile, delimiter=' ', quotechar='|')
     for row in negreader:
         negativeGroups.append(row)
