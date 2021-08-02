@@ -139,7 +139,7 @@ if len(results['remainingSubjects']) > 0:
 
         numStringsB = 0
         numStringsAandB = defaultdict(int)
-        outfilename = "probability_bf" + sys.argv[1][9:-1] + "txt"
+        outfilename = "probability_results.txt"
         outfile = open(outfilename, "w")
         '''
             count the number of n-bit strings with k 1s that make A int. B, B true
@@ -242,4 +242,5 @@ if len(results['remainingSubjects']) > 0:
                     print("subject #" + str(subject) + " has a " + str(
                         round(midpointEstimates[subjectIndex] * 100,3)) + " percent chance to be positive.")
                     outfile.write("subject #" + str(subject) + " has a " + str(
-                        round(midpointEstimates[subjectIndex] * 100, 3)) + " percent chance to be positive.")
+                        round(midpointEstimates[subjectIndex] * 100, 3)) + " percent chance to be positive.\n")
+outfile.close()
