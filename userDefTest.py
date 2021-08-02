@@ -133,9 +133,9 @@ if len(results['remainingSubjects']) > 0:
         while myChoioe < 0 or myChoioe > 1:
             myChoioe = float(input("Please provide the a priori probability of infection (between 0 and 1): "))
         p = float(myChoioe)
-        myChoice = float(input("What margin of error will you target (between 0 and 1. enter 0 to test all values of k): "))
+        myChoice = float(input("What margin of error will you target (0 is recommended, higher values may be less accurate): "))
         while myChoioe < 0 or myChoioe > 1:
-            myChoice = float(input("What margin of error will you target (between 0 and 1. enter 0 to test all values of k): "))
+            myChoice = float(input("What margin of error will you target (0 is recommended, higher values may be less accurate): "))
 
         numStringsB = 0
         numStringsAandB = defaultdict(int)
