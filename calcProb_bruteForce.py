@@ -185,6 +185,6 @@ with open(sys.argv[1], 'rb') as infile:
 
                     for subjectIndex in range(numSubjects):
                         subject = remaining[run][partition]['subjects'][subjectIndex]
-                        print("subject #" + str(subject) + " has a " + str(midpointEstimates[subjectIndex]*100)+" + or - " + str(intervals[subjectIndex]*100) + " percent chance to be positive.")
-                        outfile.write("subject #" + str(subject) + " has a " + str(midpointEstimates[subjectIndex]*100)+" + or - " + str(intervals[subjectIndex]*100) + " percent chance to be positive.\n")
+                        print("subject #" + str(subject) + " has a " + str(round(midpointEstimates[subjectIndex]*100,3))+" ±" + str(round(intervals[subjectIndex]*100,3)) + " percent chance to be positive.")
+                        outfile.write("subject #" + str(subject) + " has a "+ str(round(midpointEstimates[subjectIndex]*100,3))+" ±" + str(round(intervals[subjectIndex]*100,3)) + " percent chance to be positive.\n")
 
