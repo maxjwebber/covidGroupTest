@@ -16,3 +16,7 @@ convertbincsv.py – converts the testdata and grouptest files to binary (to red
 1PgenerateRemaining.py - runs 1PIA for the provided testdata and grouptests, creates file containing leftover individuals at each partition (for probability testing)
 
 calcProb_bruteForce.py – calculates probability of infection for remaining individuals (using output of previous program).
+
+## Note on Data Used
+The plot in the excel file included here was generated using a csv with 1,000,000 lines of test data. Unfortunately, that file is too large to host on Github.
+Email me at max@maxwrit.es with any questions/requests for the above mentioned file.
