@@ -2,6 +2,8 @@
 ## Practical Code
 Download and run userDefTest.py, which combines simulation file functions. Provide a csv of groups testing positive and a csv of groups testing negative, receive remaining groups and (optionally) probability of infection for all subjects. 
 
+Usage is userDefTest [positives].csv [negatives].csv
+
 ## Simulation Files
 generateTestData.py – generates csv containing binary strings with n 0s (uninfected subjects) and k 1s (infected people). user can also specify how many runs
 
