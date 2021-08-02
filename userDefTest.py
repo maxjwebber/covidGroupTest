@@ -170,7 +170,6 @@ if len(results['remainingSubjects']) > 0:
         if numSubjects > 0:
             while keyIndex < numSubjects and k <= numSubjects:
                 print("k=" + str(k))
-                outfile.write("k=" + str(k) + "\n")
                 numStringsB = 0
                 numStringsAandB.clear()
                 renumbered.clear()
@@ -199,11 +198,14 @@ if len(results['remainingSubjects']) > 0:
                                   probXgreaterthan[k]) / (probBandXlessthanorequaltok + probXgreaterthan[k])
                     absoluteError = upperBound - lowerBound
                     print(str(lowerBound) + " < " + "estimate for subject " + str(key) + " < " + str(upperBound))
-                    outfile.write(
-                        str(lowerBound) + " < " + "estimate for subject " + str(key) + " < " + str(upperBound) + "\n")
-                    if (errorMargin > 0 and absoluteError < errorMargin) or (errorMargin == 0 and k == numSubjects):
+                    if errorMargin > 0 and absoluteError < errorMargin:
                         midpointEstimates.append((upperBound + lowerBound) / 2)
                         intervals.append(absoluteError / 2)
+                        keyIndex += 1
+                        if keyIndex == numSubjects:
+                            checkingBounds = False
+                    elif errorMargin == 0 and k == numSubjects:
+                        midpointEstimates.append((upperBound + lowerBound) / 2)
                         keyIndex += 1
                         if keyIndex == numSubjects:
                             checkingBounds = False
@@ -225,12 +227,19 @@ if len(results['remainingSubjects']) > 0:
                     print(str(group))
                     outfile.write(str(group) + "\n")
 
-            for subjectIndex in range(numSubjects):
-                subject = results['remainingSubjects'][subjectIndex]
-                print("subject #" + str(subject) + " has a " + str(
-                    midpointEstimates[subjectIndex] * 100) + " + or - " + str(
-                    intervals[subjectIndex] * 100) + " percent chance to be positive.")
-                outfile.write("subject #" + str(subject) + " has a " + str(
-                    midpointEstimates[subjectIndex] * 100) + " + or - " + str(
-                    intervals[subjectIndex] * 100) + " percent chance to be positive.\n")
-
+            if errorMargin > 0:
+                for subjectIndex in range(numSubjects):
+                    subject = results['remainingSubjects'][subjectIndex]
+                    print("subject #" + str(subject) + " has a " + str(
+                        round(midpointEstimates[subjectIndex] * 100,3)) + " + or - " + str(
+                        round(intervals[subjectIndex] * 100,3)) + " percent chance to be positive.")
+                    outfile.write("subject #" + str(subject) + " has a " + str(
+                        round(midpointEstimates[subjectIndex] * 100,3)) + " + or - " + str(
+                        round(intervals[subjectIndex] * 100,3)) + " percent chance to be positive.\n")
+            else:
+                for subjectIndex in range(numSubjects):
+                    subject = results['remainingSubjects'][subjectIndex]
+                    print("subject #" + str(subject) + " has a " + str(
+                        round(midpointEstimates[subjectIndex] * 100,3)) + " percent chance to be positive.")
+                    outfile.write("subject #" + str(subject) + " has a " + str(
+                        round(midpointEstimates[subjectIndex] * 100, 3)) + " percent chance to be positive.")
